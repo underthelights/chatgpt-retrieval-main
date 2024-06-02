@@ -1,28 +1,28 @@
 import os
 import constants
-from transformers import MarianMTModel, MarianTokenizer
 from tqdm import tqdm
 import openai
-
-# MarianMT 모델 로드 (예시: 한국어-영어 번역 모델)
-model_name = 'Helsinki-NLP/opus-mt-ko-en'
-tokenizer = MarianTokenizer.from_pretrained(model_name)
-model = MarianMTModel.from_pretrained(model_name)
 
 openai.api_key = constants.APIKEY
 
 def translate_to_english(text: str) -> str:
-    inputs = tokenizer(text, return_tensors="pt", max_length=512, truncation=True)
-    translated_tokens = model.generate(**inputs)
-    translated_text = tokenizer.decode(translated_tokens[0], skip_special_tokens=True)
-    return translated_text
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant that translates Korean text to English."},
+            {"role": "user", "content": f"Translate the following Korean text to English, and make the shortest translated sentence as short as possible. do not consider any tone, manner. 존댓말이 해당 번역된 문구에 들어가지 않도록 해주어야해. 최대한 짧게 번역해줘야함: {text}"}
+        ],
+        max_tokens=100,
+        temperature=0.5,
+    )
+    return response.choices[0].message['content'].strip()
 
 def remove_tone_with_gpt(translated_text: str) -> str:
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a helpful assistant that helps translate text to English without any tone or mannerisms."},
-            {"role": "user", "content": f"Translate the following text to English without adding any tone or mannerisms. 존댓말이 해당 번역된 문구에 들어가지 않도록 해주어야해. 최대한 짧게 번역해줘야함: {translated_text}"}
+            {"role": "user", "content": f"Do not consider any tone or mannerisms. : {translated_text}"}
         ],
         max_tokens=100,
         temperature=0.5,
@@ -48,11 +48,6 @@ def generate_llm_response(P_partner: str, Q: str, A_eng: str, A: str) -> str:
 
 # 예시 데이터
 dialogue = [
-    # {
-    #     "P_partner": "Eve",
-    #     "Q": "What is your favorite book?",
-    #     "A": "내가 제일 좋아하는 책은 '해리포터'야.",
-    # },
     {
         "P_partner": "문크예거",
         "Q": "너 오늘 뭐합니까?",
