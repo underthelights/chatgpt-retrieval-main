@@ -1,6 +1,5 @@
 import os
 import constants
-from tqdm import tqdm
 import openai
 
 # OpenAI API 키 설정
@@ -8,21 +7,21 @@ openai.api_key = constants.APIKEY
 id2Persona = {}
 
 # 기존 페르소나 로드 함수
-# def load_persona(persona_path: str) -> str:
-#     if os.path.exists(persona_path):
-#         with open(persona_path, 'r', encoding='utf-8') as file:
-#             return file.read()
-#     return ""
-def load_persona(id: str) -> str:
-    return id2Persona.get(id, "")
+def load_persona(persona_path: str) -> str:
+    if os.path.exists(persona_path):
+        with open(persona_path, 'r', encoding='utf-8') as file:
+            return file.read()
+    return ""
+# def load_persona(id: str) -> str:
+#     return id2Persona.get(id, "")
 
-def save_persona(id: str, persona: str):
-    id2Persona[id] = persona
-    return id2Persona[id]
+# def save_persona(id: str, persona: str):
+#     id2Persona[id] = persona
+#     return id2Persona[id]
 # 페르소나 저장 함수
-# def save_persona(persona: str, persona_path: str):
-#     with open(persona_path, 'w', encoding='utf-8') as file:
-#         file.write(persona)
+def save_persona(persona: str, persona_path: str):
+    with open(persona_path, 'w', encoding='utf-8') as file:
+        file.write(persona)
 
 # 요약 생성 함수
 def generate_summary(context: str, objective: str, style: str, tone: str, audience: str, dialogue: str) -> str:
@@ -56,8 +55,9 @@ def generate_summary(context: str, objective: str, style: str, tone: str, audien
 
 # 학습 함수
 def train(user_id: str, target_id: str, q: str, a: str):
+    persona_path = f"{user_id}"
     # 기존 페르소나 로드
-    persona = load_persona(user_id)
+    persona = load_persona(persona_path)
 
     # CO-STAR 프레임워크 설정
     context = "일상, 현실"
@@ -67,7 +67,7 @@ def train(user_id: str, target_id: str, q: str, a: str):
     audience = "일상 대화에 익숙한 사람들."
 
     # 대화 텍스트
-    dialogue = f"{target_id}가 {q}라는 질문에\n{user_id}가 {a}라고 대답했다."
+    dialogue = f"\"{target_id}\"가 {user_id}에게 {q}라는 질문을 질문을 했고, 나는 {a}라고 대답했다."
 
     # 요약 생성
     summary = generate_summary(context, objective, style, tone, audience, dialogue)
@@ -76,10 +76,9 @@ def train(user_id: str, target_id: str, q: str, a: str):
     persona += f"\n\n{summary}"
 
     # 업데이트된 페르소나 저장
-    save_persona(user_id, persona)
+    save_persona(persona, persona_path)
     
     # 업데이트된 페르소나 출력
-    print(persona)
     return 0
 
 
@@ -110,7 +109,7 @@ def remove_tone_with_gpt(translated_text: str) -> str:
     return response.choices[0].message['content'].strip()
 
 # 응답 생성 함수
-def generate_response(P_me: str, P_partner: str, Q: str, A_eng: str, A: str) -> str:
+def generate_response(P_partner: str, P_me: str, Q: str, A_eng: str, A: str) -> str:
     prompt = f"""
         나는 {P_me}인 사람이야.
         상대는 {P_partner}인 사람이고,
@@ -118,7 +117,7 @@ def generate_response(P_me: str, P_partner: str, Q: str, A_eng: str, A: str) -> 
         이때 나와 상대를 고려하고, 평소 말투를 고려했을 때 나는 뭐라고 대답할 지를 생성해줘. 
         다른 설명은 덧붙이지 말고, 한글로 대답을 만들어줘.
         """
-    print(prompt)
+    print("prompt:\n"+prompt)
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -131,10 +130,13 @@ def generate_response(P_me: str, P_partner: str, Q: str, A_eng: str, A: str) -> 
     return response.choices[0].message['content'].strip()
 
 # 실행 함수
+# my_id : 123
 def run(my_id: str, target_id: str, q: str):
     # 기존 페르소나 로드
-    my_persona = load_persona(my_id)
-    target_persona = load_persona(target_id)
+    my_persona_path = f"{my_id}"
+    my_persona = load_persona(my_persona_path)
+    target_persona_path = f"{target_id}"
+    target_persona = load_persona(target_persona_path)
     # 페르소나 분리 (내 페르소나와 타겟 페르소나)
     P_me = my_persona
     P_partner = target_persona
@@ -156,6 +158,7 @@ def run(my_id: str, target_id: str, q: str):
 # print(f"Generated Answer: {answer}")
 if __name__ == "__main__":
     train("1", "2", "내일 저녁에 같이 밥 먹자", "좋아. 그러자!")
+    # print(load_persona(f"1"))
     response = run("1", "3", "내일 저녁에 시간되냐?")
     # 내일 저녁에 시간이 괜찮아!
     print("response: ", response)
