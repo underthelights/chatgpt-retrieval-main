@@ -6,7 +6,7 @@ import openai
 # OpenAI API 키 설정
 openai.api_key = constants.APIKEY
 
-# 텍스트 번역 함수
+# 텍스트 번역 함수: 한국어 텍스트를 영어로 번역
 def translate_to_english(text: str) -> str:
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
@@ -19,7 +19,7 @@ def translate_to_english(text: str) -> str:
     )
     return response.choices[0].message['content'].strip()
 
-# 톤 제거 함수
+# 톤 제거 함수: 번역된 텍스트에서 톤이나 말투를 제거
 def remove_tone_with_gpt(translated_text: str) -> str:
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
@@ -32,7 +32,7 @@ def remove_tone_with_gpt(translated_text: str) -> str:
     )
     return response.choices[0].message['content'].strip()
 
-# 대화 전처리 함수
+# 대화 전처리 함수: 대화 데이터를 전처리하여 번역 및 톤 제거
 def preprocess_dialogue(dialogue: dict) -> dict:
     P_partner = dialogue["P_partner"]
     Q = dialogue["Q"]
@@ -47,14 +47,14 @@ def preprocess_dialogue(dialogue: dict) -> dict:
         "A_eng": A_eng
     }
 
-# 응답 생성 함수
+# 응답 생성 함수: 페르소나와 문맥을 고려하여 응답 생성
 def generate_response(P_partner: str, P_me: str, Q: str, A_eng: str, A: str) -> str:
     prompt = f"""
-    상대는 {P_partner}인 사람이고,
-    나는 {P_me}인 사람이야.
-    그리고 상대가 나에게 {Q}라는 질문을 했을 때, 나는 평소 {A_eng}라는 말을 {A}라고 답하곤 했어.
-    이때 나와 상대를 고려하고, 평소 말투를 고려했을 때 상대가 선생님 뭐하고 주무세요?라고 나는 뭐라고 대답할 지를 생성해줘. (다른 설 명은 덧붙이지 말고, 대답만 만들어줘)
-    """
+        상대는 {P_partner}인 사람이고,
+        나는 {P_me}인 사람이야.
+        그리고 상대가 나에게 {Q}라는 질문을 했을 때, 나는 평소 {A_eng}라는 말을 {A}라고 답하곤 했어.
+        이때 나와 상대를 고려하고, 평소 말투를 고려했을 때 나는 뭐라고 대답할 지를 생성해줘. (다른 설명은 덧붙이지 말고, 대답만 만들어줘)
+        """
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -68,20 +68,7 @@ def generate_response(P_partner: str, P_me: str, Q: str, A_eng: str, A: str) -> 
 
 # 예시 데이터
 dialogue = [
-    # {
-    #     "P_partner": "애인",
-    #     "P_me": "낭만적인 사람",
-    #     "Q": "저녁 뭐 먹을까?",
-    #     "A_eng": "Yes, I would love to.",
-    #     "A": "너랑 함께라면 언제든."
-    # },
-    # {
-    #     "P_partner": "24살 한국인 남자",
-    #     "P_me": "채식주의자 22살 윤보미, 귀여운 이십대 여성 말투 사용",
-    #     "Q": "오늘 저녁에 같이 고기먹을래?",
-    #     "A_eng": "I’m resting in my home",
-    #     "A": "ㅎㅎㅎ 지금 집에서 쉬고 있엉 ㅎㅎㅎ 너무 좋당 !! "
-    # },
+    # 예시 대화 데이터 목록
     {
         "P_partner": "18살 여학생", 
         "P_me": "상대를 가르치고 있는 29살 선생님",
